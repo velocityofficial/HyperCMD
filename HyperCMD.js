@@ -1,9 +1,10 @@
 const { Events, ApplicationCommandOptionType: OptionType } = require('discord.js');
+const config = require('./HyperConfig.json')
 
 module.exports = {
   name: Events.MessageCreate,
   async execute(message, client) {
-    if (message.author.bot || !message.content.startsWith('!')) return;
+    if (message.author.bot || !message.content.startsWith(config.prefix)) return;
 
     const [cmd, ...args] = parseCommand(message.content);
     const command = client.commands.get(cmd.toLowerCase());
