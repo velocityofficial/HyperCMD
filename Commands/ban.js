@@ -15,7 +15,6 @@ module.exports = {
     const user = interaction.options.getUser('user');
     const reason = interaction.options.getString('reason') || 'no reason given';
     
-    // Ban logic would go here, this is just a placeholder response
     await interaction.reply(`Banned ${user.username} (Reason: ${reason})`);
   }
 };
