@@ -1,7 +1,8 @@
 const { Client, Collection, GatewayIntentBits, REST, Routes } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
-const config = require('./Config.json')
+const config = require('./Config.json');
+const { loadRestAPI } = require('./Events/rest');
 
 console.log('[Main] Starting bot...');
 
@@ -16,6 +17,7 @@ const client = new Client({
 client.commands = new Collection();
 
 console.log('[Main] Loading commands...');
+
 // Function to recursively get all .js files from a directory and its subdirectories
 function getJsFiles(dir) {
   const jsFiles = [];
@@ -91,21 +93,20 @@ for (const file of eventFiles) {
 
 // Register slash commands
 console.log('[Main] Preparing to register slash commands...');
-const rest = new REST({ version: '10' }).setToken(config.login);
 
 client.once('ready', async () => {
   try {
     console.log(`[Main] Bot logged in as: ${client.user.tag}`);
-    console.log('[Main] Refreshing application commands...');
+    console.log('[Main] Registering REST API...');
 
-    const commands = Array.from(client.commands.values()).map(command => command.data.toJSON());
-    await rest.put(Routes.applicationCommands(config.id), { body: commands });
-    console.log('[Main] Successfully registered application commands');
+    // Call your loadRestAPI function after the client is ready
+    await loadRestAPI(client);
+
+    console.log('[Main] REST API loaded successfully!');
   } catch (error) {
-    console.error('[Main] Error registering commands:', error);
+    console.error('[Main] Error loading REST API:', error);
   }
 });
-
 
 console.log('[Main] Attempting to log in...');
 client.login(config.login)
