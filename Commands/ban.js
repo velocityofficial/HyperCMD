@@ -4,12 +4,18 @@ module.exports = {
   data: new SlashCommandBuilder()
     .setName('ban')
     .setDescription('Ban command')
-    .addUserOption(o => o.setName('user').setRequired(true))
-    .addStringOption(o => o.setName('reason')),
+    .addUserOption(option =>
+      option.setName('user').setDescription('User to ban').setRequired(true)
+    )
+    .addStringOption(option =>
+      option.setName('reason').setDescription('Reason for the ban')
+    ),
+
+  async execute(interaction) {
+    const user = interaction.options.getUser('user');
+    const reason = interaction.options.getString('reason') || 'no reason given';
     
-  execute: async ({ options, reply }) => {
-    const user = options.getUser('user');
-    const reason = options.getString('reason') || 'no reason given';
-    await reply(`Banned ${user.username} (Reason: ${reason})`);
+    // Ban logic would go here, this is just a placeholder response
+    await interaction.reply(`Banned ${user.username} (Reason: ${reason})`);
   }
 };
