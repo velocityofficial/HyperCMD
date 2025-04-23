@@ -1,4 +1,3 @@
-// HyperCMD V1
 const { ApplicationCommandOptionType } = require('discord.js');
 
 module.exports = {
@@ -6,7 +5,6 @@ module.exports = {
   execute(message, client) {
     if (message.author.bot || !message.content.startsWith('!')) return;
 
-    // Parse quoted args
     const parseArgs = (input) => {
       const args = [];
       let current = '';
@@ -29,7 +27,7 @@ module.exports = {
       [ApplicationCommandOptionType.String]: v => v,
       [ApplicationCommandOptionType.Integer]: v => parseInt(v),
       [ApplicationCommandOptionType.Number]: v => parseFloat(v),
-      [ApplicationCommandOptionType.Boolean]: v => ['true','yes','1'].includes(v.toLowerCase()),
+      [ApplicationCommandOptionType.Boolean]: v => ['true', 'yes', '1'].includes(v.toLowerCase()),
       [ApplicationCommandOptionType.User]: v => v.replace(/\D/g, ''),
       [ApplicationCommandOptionType.Channel]: v => v.replace(/\D/g, ''),
       [ApplicationCommandOptionType.Role]: v => v.replace(/\D/g, '')
@@ -40,12 +38,26 @@ module.exports = {
     if (!command) return;
 
     const options = {};
-    command.data.options?.forEach((opt, i) => {
+    let subcommand = null;
+
+    // sub
+    if (command.data.options?.some(opt => opt.type === ApplicationCommandOptionType.Subcommand)) {
+      const potentialSubcommand = args[0]?.toLowerCase();
+      subcommand = command.data.options.find(
+        opt => opt.type === ApplicationCommandOptionType.Subcommand && opt.name.toLowerCase() === potentialSubcommand
+      );
+      if (subcommand) {
+        args.shift();
+      }
+    }
+
+    const targetOptions = subcommand ? subcommand.options || [] : command.data.options || [];
+    targetOptions.forEach((opt, i) => {
       if (!args[i] && opt.required) throw new Error(`Missing ${opt.name}`);
       options[opt.name] = converters[opt.type]?.(args[i]) ?? args[i];
     });
 
-    command.execute({
+    const interaction = {
       options: {
         get: n => options[n],
         getString: n => String(options[n]),
@@ -54,9 +66,20 @@ module.exports = {
         getBoolean: n => Boolean(options[n]),
         getUser: n => client.users.resolve(options[n]),
         getChannel: n => client.channels.resolve(options[n]),
-        getRole: n => message.guild?.roles.resolve(options[n])
+        getRole: n => message.guild?.roles.resolve(options[n]),
+        getSubcommand: () => subcommand?.name || null
       },
       reply: r => message.reply(r)
-    }).catch(e => message.reply(`Error: ${e.message}`));
+    };
+
+    try {
+      if (subcommand && command.subcommands?.[subcommand.name]) {
+        command.subcommands[subcommand.name](interaction);
+      } else {
+        command.execute(interaction);
+      }
+    } catch (e) {
+      message.reply(`Error: ${e.message}`);
+    }
   }
 };
