@@ -1,7 +1,7 @@
 const { Client, Collection, GatewayIntentBits, REST, Routes } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
-const config = require('./Config.json');
+const config = require('./Config.json')
 
 console.log('[Main] Starting bot...');
 
@@ -44,25 +44,12 @@ console.log('[Main] Found command files:', commandFiles.map(f => path.relative(_
 for (const file of commandFiles) {
   try {
     const command = require(file);
-
-    if (!command || typeof command !== 'object') {
-      console.warn(`[Main] Skipped ${file}: Invalid export (not an object)`);
-      continue;
-    }
-
-    const commandName = command.data?.name || command.name;
-    if (!commandName) {
+    if (command.data?.name) {
+      client.commands.set(command.data.name, command);
+      console.log(`[Main] Loaded command: ${command.data.name} from ${path.relative(__dirname, file)}`);
+    } else {
       console.warn(`[Main] Skipped ${file}: Missing command name`);
-      continue;
     }
-
-    // Normalize .data if it's a SlashCommandBuilder
-    if (command.data?.toJSON) {
-      command.data = command.data.toJSON();
-    }
-
-    client.commands.set(commandName, command);
-    console.log(`[Main] Loaded command: ${commandName} from ${path.relative(__dirname, file)}`);
   } catch (error) {
     console.error(`[Main] Error loading command ${file}:`, error);
   }
@@ -111,16 +98,14 @@ client.once('ready', async () => {
     console.log(`[Main] Bot logged in as: ${client.user.tag}`);
     console.log('[Main] Refreshing application commands...');
 
-    const slashCommands = Array.from(client.commands.values())
-      .filter(cmd => cmd.data && typeof cmd.data.name === 'string') // Only valid slash commands
-      .map(cmd => cmd.data);
-
-    await rest.put(Routes.applicationCommands(config.id), { body: slashCommands });
+    const commands = Array.from(client.commands.values()).map(command => command.data.toJSON());
+    await rest.put(Routes.applicationCommands(config.id), { body: commands });
     console.log('[Main] Successfully registered application commands');
   } catch (error) {
     console.error('[Main] Error registering commands:', error);
   }
 });
+
 
 console.log('[Main] Attempting to log in...');
 client.login(config.login)
