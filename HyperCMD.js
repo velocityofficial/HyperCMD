@@ -1,5 +1,5 @@
 const { Events, ApplicationCommandOptionType: OptionType } = require('discord.js');
-const config = require('./HyperConfig.json')
+const config = require('./Config.json')
 
 module.exports = {
   name: Events.MessageCreate,
